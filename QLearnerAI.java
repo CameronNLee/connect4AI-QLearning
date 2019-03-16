@@ -112,7 +112,7 @@ public class QLearnerAI extends AIModule{
         int epsilon = r.nextInt(2); // 0 or 1
         int action;
         if (epsilon == 0 || !isModified(q_values)) { // set chosenMove to a random, legal column (explore paths)
-            action = r.nextInt(legalActions.size());
+            action = legalActions.get(r.nextInt(legalActions.size()));
         }
         else { // set chosenMove to the maximum of q_values for that given state (exploit path)
             action = getMaxQValueAction(q_values);
