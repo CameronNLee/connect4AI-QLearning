@@ -109,9 +109,9 @@ public class QLearnerAI extends AIModule{
 
     private int selectMove(ArrayList<Integer> legalActions, String[] q_values){
         final Random r = new Random();
-        int epsilon = r.nextInt(1); // 0 or 1
+        int epsilon = r.nextInt(2); // 0 or 1
         int action;
-        if (epsilon == 0) { // set chosenMove to a random, legal column (explore paths)
+        if (epsilon == 0 || !isModified(q_values)) { // set chosenMove to a random, legal column (explore paths)
             action = r.nextInt(legalActions.size());
         }
         else { // set chosenMove to the maximum of q_values for that given state (exploit path)
@@ -138,6 +138,15 @@ public class QLearnerAI extends AIModule{
             // game is not over after making play as the current player; Thus:
             // simulate opponent move here using the updated game board
             getNextMove(game); // if doing this causes the game to end, assign -1 for chosenMove.
+            if (game.isGameOver()) {
+                if (game.getWinner() == 2) {
+                    reward = -1;
+                }
+                else if (game.getWinner() == 0) {
+                    reward = 0;
+                }
+            }
+            game.unMakeMove();
             // Need to somehow backpropagate that -1 result...
         }
 
@@ -152,6 +161,7 @@ public class QLearnerAI extends AIModule{
         state_action_count.get(curr_board.state)[chosenMove] += 1;
         int[] updatedCounts = state_action_count.get(curr_board.state);
         state_action_count.put(curr_board.state, updatedCounts);
+        game.unMakeMove();
     }
 
     // helper function
@@ -169,6 +179,16 @@ public class QLearnerAI extends AIModule{
         }
 
         return maxColIndex;
+    }
+
+    private boolean isModified(String[] q_values) {
+        int[] q_vals = Arrays.stream(q_values).mapToInt(Integer::parseInt).toArray();
+        for (int i : q_vals) {
+            if (i != 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }
