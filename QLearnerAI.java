@@ -139,7 +139,7 @@ public class QLearnerAI extends AIModule{
             // simulate opponent move here using the updated game board
             getNextMove(game); // if doing this causes the game to end, assign -1 for chosenMove.
             if (game.isGameOver()) {
-                if (game.getWinner() == 2) {
+                if (game.getWinner() != 0) {
                     reward = -1;
                 }
                 else if (game.getWinner() == 0) {
