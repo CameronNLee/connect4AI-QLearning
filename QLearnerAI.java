@@ -1,8 +1,5 @@
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Random;
+import java.util.*;
 import java.io.*;
 
 
@@ -99,7 +96,7 @@ public class QLearnerAI extends AIModule{
         String[] q_values = state_action_values.get(currState);
         if (q_values == null){
             String[] action_values = new String[game.getWidth()];
-            for (int i=0;i<game.getWidth();i++)
+            for (int i = 0; i < game.getWidth(); i++)
                 action_values[i] = "0";
             q_values = action_values;
             state_action_values.put(currState, q_values);
@@ -111,11 +108,65 @@ public class QLearnerAI extends AIModule{
 
 
     private int selectMove(ArrayList<Integer> legalActions, String[] q_values){
-        return -1;
+        final Random r = new Random();
+        int epsilon = r.nextInt(1); // 0 or 1
+        int action;
+        if (epsilon == 0) { // set chosenMove to a random, legal column
+            action = r.nextInt(legalActions.size());
+        }
+        else { // set chosenMove to the maximum of q_values for that given state
+            action = getMaxQValueAction(q_values);
+        }
+        return action;
     }
 
     private void updateQTable(GameStateModule game, Board curr_board){
         // update q(s, a) and count(s, a)
+        game.makeMove(chosenMove);
+        if (game.isGameOver()) { // then your move was either a +1 or a +0 move
+            if (game.getWinner() == 1) {
+                curr_board.q_values[chosenMove] = "1"; // +1 to that action made
+                state_action_values.put(curr_board.state, curr_board.q_values); // updates q(s,a)
+            }
+            else if (game.getWinner() == 0) {
+                // this is probably unnecessary
+                curr_board.q_values[chosenMove] = "0"; // +0 to that action made
+                state_action_values.put(curr_board.state, curr_board.q_values); // updates q(s,a)
+            }
+        }
+        else { // game is not over after making play; simulate opponent move to check if you made a -1 move
+            // simulate opponent move here
+            // if opponent's move ended game in their favor... uh oh, -1.
+        }
+        for (int i = 0; i < game.getWidth(); i++) {
+
+            GameStateModule duplicate = game.copy();
+
+            if (!duplicate.canMakeMove(i)) {
+                continue;
+            }
+            duplicate.makeMove(i);
+            if (duplicate.isGameOver()) {
+                // get who the winner is and update the q_values array
+            }
+
+        }
+    }
+
+    private int getMaxQValueAction(String[] q_values) {
+        int[] q_vals = Arrays.stream(q_values).mapToInt(Integer::parseInt).toArray();
+        // we want the column associated with the highest Q value,
+        // NOT the highest Q value itself.
+        int maxColIndex = 0;
+        int count = 0;
+        for (int num : q_vals) {
+            if (num > q_vals[maxColIndex]) {
+                maxColIndex = count;
+            }
+            ++count;
+        }
+
+        return maxColIndex;
     }
 
 }
