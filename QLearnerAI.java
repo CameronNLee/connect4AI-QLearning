@@ -111,10 +111,10 @@ public class QLearnerAI extends AIModule{
         final Random r = new Random();
         int epsilon = r.nextInt(1); // 0 or 1
         int action;
-        if (epsilon == 0) { // set chosenMove to a random, legal column
+        if (epsilon == 0) { // set chosenMove to a random, legal column (explore paths)
             action = r.nextInt(legalActions.size());
         }
-        else { // set chosenMove to the maximum of q_values for that given state
+        else { // set chosenMove to the maximum of q_values for that given state (exploit path)
             action = getMaxQValueAction(q_values);
         }
         return action;
@@ -134,25 +134,15 @@ public class QLearnerAI extends AIModule{
                 state_action_values.put(curr_board.state, curr_board.q_values); // updates q(s,a)
             }
         }
-        else { // game is not over after making play; simulate opponent move to check if you made a -1 move
-            // simulate opponent move here
-            // if opponent's move ended game in their favor... uh oh, -1.
-        }
-        for (int i = 0; i < game.getWidth(); i++) {
-
-            GameStateModule duplicate = game.copy();
-
-            if (!duplicate.canMakeMove(i)) {
-                continue;
-            }
-            duplicate.makeMove(i);
-            if (duplicate.isGameOver()) {
-                // get who the winner is and update the q_values array
-            }
-
+        else {
+            // game is not over after making play as the current player; Thus:
+            // simulate opponent move here using the updated game board
+            getNextMove(game); // if doing this causes the game to end, assign -1 for chosenMove.
+            // Need to somehow backpropagate that -1 result...
         }
     }
 
+    // helper function
     private int getMaxQValueAction(String[] q_values) {
         int[] q_vals = Arrays.stream(q_values).mapToInt(Integer::parseInt).toArray();
         // we want the column associated with the highest Q value,
