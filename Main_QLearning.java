@@ -233,9 +233,9 @@ public class Main_QLearning
             if (!dir.exists()){
                 dir.mkdir();
             }
-            BufferedWriter[] writers = new BufferedWriter[width * height];
+            BufferedWriter[] writers = new BufferedWriter[width * height + 1];
 
-            for(int i = 0; i < width * height; i++){
+            for(int i = 0; i < width * height + 1; i++){
                 writers[i] = new BufferedWriter(new FileWriter(new File("qtables/" + i + ".txt")));
             }
 
@@ -253,7 +253,7 @@ public class Main_QLearning
                 }
                 writers[nonzeros].write(buffer + "\n");
             }
-            for(int i = 0; i < width * height; i++){
+            for(int i = 0; i < width * height + 1; i++){
                 writers[i].close();
             }
 
