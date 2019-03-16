@@ -123,16 +123,16 @@ public class QLearnerAI extends AIModule{
     private void updateQTable(GameStateModule game, Board curr_board){
         // update q(s, a) and count(s, a)
         game.makeMove(chosenMove);
-        if (game.isGameOver()) { // then your move was either a +1 or a +0 move
-            if (game.getWinner() == 1) {
-                curr_board.q_values[chosenMove] = "1"; // +1 to that action made
-                state_action_values.put(curr_board.state, curr_board.q_values); // updates q(s,a)
-            }
-            else if (game.getWinner() == 0) {
-                // this is probably unnecessary
-                curr_board.q_values[chosenMove] = "0"; // +0 to that action made
-                state_action_values.put(curr_board.state, curr_board.q_values); // updates q(s,a)
-            }
+
+        // number of times the chosen action (i.e. chosenMove) for that chosen state
+        // was called in the past. We use this to calculate the alpha value.
+        int visits = state_action_count.get(curr_board.state)[chosenMove];
+        int alphaValue = 1 / (1 + visits);
+        int q_value;
+        double reward = 0;
+
+        if (game.isGameOver()) { // then your move is rewarded either a +1 or a +0
+            reward = (game.getWinner() == 1) ? 1 : 0;
         }
         else {
             // game is not over after making play as the current player; Thus:
@@ -140,6 +140,18 @@ public class QLearnerAI extends AIModule{
             getNextMove(game); // if doing this causes the game to end, assign -1 for chosenMove.
             // Need to somehow backpropagate that -1 result...
         }
+
+        // here is where we update q(s,a)
+        // TODO: change q_value into a double type later after changing q_values, from String[] to double[].
+        q_value = (int)((1 - alphaValue) + alphaValue*(reward + gamma));
+        curr_board.q_values[chosenMove] = Integer.toString(q_value);
+        state_action_values.put(curr_board.state, curr_board.q_values);
+
+
+        // here is where we update count(s,a) by 1
+        state_action_count.get(curr_board.state)[chosenMove] += 1;
+        int[] updatedCounts = state_action_count.get(curr_board.state);
+        state_action_count.put(curr_board.state, updatedCounts);
     }
 
     // helper function
