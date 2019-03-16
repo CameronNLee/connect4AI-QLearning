@@ -161,7 +161,6 @@ public class QLearnerAI extends AIModule{
         state_action_count.get(curr_board.state)[chosenMove] += 1;
         int[] updatedCounts = state_action_count.get(curr_board.state);
         state_action_count.put(curr_board.state, updatedCounts);
-        game.unMakeMove();
     }
 
     // helper function
