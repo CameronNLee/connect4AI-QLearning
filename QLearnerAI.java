@@ -109,7 +109,7 @@ public class QLearnerAI extends AIModule{
 
     private int selectMove(ArrayList<Integer> legalActions, String[] q_values){
         final Random r = new Random();
-        int epsilon = r.nextInt(2); // 0 or 1
+        int epsilon = r.nextInt(3); // 0 or 1
         int action;
         if (epsilon == 0 || !isModified(q_values)) { // set chosenMove to a random, legal column (explore paths)
             action = legalActions.get(r.nextInt(legalActions.size()));
@@ -132,7 +132,7 @@ public class QLearnerAI extends AIModule{
         double reward = 0;
 
         if (game.isGameOver()) { // then your move is rewarded either a +1 or a +0
-            reward = (game.getWinner() == 1) ? 1 : 0;
+            reward = (game.getWinner() != 0) ? 1 : 0;
         }
         else {
             // game is not over after making play as the current player; Thus:
@@ -156,11 +156,8 @@ public class QLearnerAI extends AIModule{
         curr_board.q_values[chosenMove] = Integer.toString(q_value);
         state_action_values.put(curr_board.state, curr_board.q_values);
 
-
         // here is where we update count(s,a) by 1
         state_action_count.get(curr_board.state)[chosenMove] += 1;
-        int[] updatedCounts = state_action_count.get(curr_board.state);
-        state_action_count.put(curr_board.state, updatedCounts);
     }
 
     // helper function
