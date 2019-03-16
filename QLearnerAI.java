@@ -152,7 +152,8 @@ public class QLearnerAI extends AIModule{
 
         // here is where we update q(s,a)
         // TODO: change q_value into a double type later after changing q_values, from String[] to double[].
-        q_value = (int)((1 - alphaValue) + alphaValue*(reward + gamma));
+        // q_value = (int)((1 - alphaValue) + alphaValue*(reward + gamma));
+        q_value = (int)reward;
         curr_board.q_values[chosenMove] = Integer.toString(q_value);
         state_action_values.put(curr_board.state, curr_board.q_values);
 
