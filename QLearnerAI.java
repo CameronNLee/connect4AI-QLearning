@@ -115,7 +115,7 @@ public class QLearnerAI extends AIModule{
             action = legalActions.get(r.nextInt(legalActions.size()));
         }
         else { // set chosenMove to the maximum of q_values for that given state (exploit path)
-            action = getMaxQValueAction(q_values);
+            action = getMaxQValueAction(legalActions, q_values);
         }
         return action;
     }
@@ -152,7 +152,7 @@ public class QLearnerAI extends AIModule{
 
         // here is where we update q(s,a)
         // TODO: change q_value into a double type later after changing q_values, from String[] to double[].
-        // q_value = (int)((1 - alphaValue) + alphaValue*(reward + gamma));
+        //q_value = (int)((1 - alphaValue) + alphaValue*(reward + gamma));
         q_value = (int)reward;
         curr_board.q_values[chosenMove] = Integer.toString(q_value);
         state_action_values.put(curr_board.state, curr_board.q_values);
@@ -162,20 +162,25 @@ public class QLearnerAI extends AIModule{
     }
 
     // helper function
-    private int getMaxQValueAction(String[] q_values) {
-        int[] q_vals = Arrays.stream(q_values).mapToInt(Integer::parseInt).toArray();
-        // we want the column associated with the highest Q value,
-        // NOT the highest Q value itself.
-        int maxColIndex = 0;
-        int count = 0;
-        for (int num : q_vals) {
-            if (num > q_vals[maxColIndex]) {
-                maxColIndex = count;
-            }
-            ++count;
+    private int getMaxQValueAction(ArrayList<Integer> legalActions, String[] q_values) {
+        ArrayList<Integer> q_vals = new ArrayList<Integer>();
+        for (String element : q_values) {
+            q_vals.add(Integer.valueOf(element));
         }
-
-        return maxColIndex;
+        // we want the column associated with the highest Q value,
+        // NOT the highest Q value itself
+        int maxIndex = 0;
+        for (int i = 1; i < q_vals.size(); i++) {
+            if (legalActions.contains(i) && q_vals.get(i) >= q_vals.get(maxIndex)) {
+                maxIndex = i;
+            }
+        }
+        System.out.print("Q Vals: ");
+        System.out.println(q_vals);
+        System.out.print("Legal Actions: ");
+        System.out.println(legalActions);
+        System.out.println(maxIndex);
+        return maxIndex;
     }
 
     private boolean isModified(String[] q_values) {
