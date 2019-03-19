@@ -172,13 +172,13 @@ public class QLearnerAI extends AIModule{
     }
 
     private int getMaxQValueAction(ArrayList<Integer> legalActions, String[] q_values) {
-        ArrayList<Integer> q_vals = new ArrayList<Integer>();
+        ArrayList<Double> q_vals = new ArrayList<Double>();
         for (String element : q_values) {
-            q_vals.add(Integer.valueOf(element));
+            q_vals.add(Double.valueOf(element));
         }
         // we want the column associated with the highest Q value,
         // NOT the highest Q value itself
-        int maxIndex = 0;
+/*        int maxIndex = 0;
         for (int i = 1; i < q_vals.size(); i++) {
             if (legalActions.contains(i) && q_vals.get(i) >= q_vals.get(maxIndex)) {
                 maxIndex = i;
@@ -186,7 +186,29 @@ public class QLearnerAI extends AIModule{
         }
         if (!legalActions.contains(maxIndex)) {
             maxIndex = legalActions.get(0);
+        }*/
+
+        int zeroCount = 0;
+        ArrayList<Integer> zeroLegalActions = new ArrayList<Integer>();
+        for (int i : legalActions) {
+            if (q_vals.get(i) == 0) {
+                ++zeroCount;
+                zeroLegalActions.add(i);
+            }
         }
+        Random r = new Random();
+        // assigning randomly picked column to maxIndex
+        int maxIndex = legalActions.get(0);
+        if (zeroCount != 0) {
+            maxIndex = zeroLegalActions.get(r.nextInt(zeroCount));
+        }
+
+        for (int index : legalActions) {
+            if (q_vals.get(index) > q_vals.get(maxIndex)) {
+                maxIndex = index;
+            }
+        }
+
         /*
         System.out.print("Q Vals: ");
         System.out.println(q_vals);
