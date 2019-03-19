@@ -112,7 +112,6 @@ public class QLearnerAI extends AIModule{
         int epsilon = r.nextInt(2); // 0 or 1
         int action;
         if (epsilon == 0 || !isModified(q_values)) { // set chosenMove to a random, legal column (explore paths)
-            System.out.println(legalActions.size());
             action = legalActions.get(r.nextInt(legalActions.size()));
         }
         else { // set chosenMove to the maximum of q_values for that given state (exploit path)
@@ -123,52 +122,61 @@ public class QLearnerAI extends AIModule{
 
     private void updateQTable(GameStateModule game, Board curr_board, int chosenMoveCopy){
         // update q(s, a) and count(s, a)
-        game.makeMove(chosenMoveCopy);
 
-        Boolean playerWon = false;
+        Double q = Double.valueOf(curr_board.q_values[chosenMoveCopy]);
+        Double opponentQ = 0.0;
         Double reward = 0.0;
         Double maxQValue = 0.0;
         Integer visits = state_action_count.get(curr_board.state)[chosenMoveCopy];
-        Double alphaValue = 1.0 / (1.0 + visits);
-        Double q = Double.valueOf(curr_board.q_values[chosenMoveCopy]);
+        Double alpha = 1.0 / (1.0 + visits);
+        Boolean playerEndedGame = false;
+        Boolean opponentEndedGame = false;
+        Board opponentBoard = curr_board;
+        int opponentMove = -1;
 
+        game.makeMove(chosenMoveCopy);
         if (game.isGameOver()) { // player won, or there was a draw on the player's move
             reward = (game.getWinner() != 0) ? 1 : 0.5;
-            playerWon = true;
+            playerEndedGame = true;
             game.unMakeMove();
         }
         else {
-            Board opponentBoard = getStateActionValues(game);
-            game.makeMove(selectMove(opponentBoard.legalActions, opponentBoard.q_values));
+            opponentBoard = getStateActionValues(game);
+            opponentMove = selectMove(opponentBoard.legalActions, opponentBoard.q_values);
+            opponentQ = Double.valueOf(opponentBoard.q_values[opponentMove]);
+            game.makeMove(opponentMove);
         }
 
-        if (game.isGameOver() && !playerWon) { // opponent won the game, or there was a draw on the opponent's move
-            if (game.getWinner() != 0) {
-                reward = -1.0;
-            }
-            else if (game.getWinner() == 0) {
-                reward = 0.0;
-            }
+        if (game.isGameOver() && !playerEndedGame) { // opponent won the game, or there was a draw on the opponent's move
+            reward = (game.getWinner() != 0) ? -1.0 : 0.5;
+            opponentEndedGame = true;
+            game.unMakeMove();
+            game.unMakeMove();
         }
-        else {
+
+        if (!playerEndedGame && !opponentEndedGame) { // no terminal states found
+            game.unMakeMove();
             Board sPrime = getStateActionValues(game);
             maxQValue = Double.valueOf(sPrime.q_values[getMaxQValueAction(sPrime.legalActions, sPrime.q_values)]);
             //q = reward + gamma * maxQValue; //deterministic
-
-            game.unMakeMove();
             game.unMakeMove();
         }
 
         // here is where we update q(s,a)
         // TODO: change q_value into a double type later after changing q_values, from String[] to double[].
-        q = ((1-alphaValue) * q) + (alphaValue * (reward + gamma * maxQValue));
+        q = ((1-alpha) * q) + (alpha * (reward + gamma * maxQValue));
+        opponentQ = ((1-alpha) * opponentQ) + (alpha * (reward + gamma * maxQValue));
 
         curr_board.q_values[chosenMoveCopy] = Double.toString(q);
         state_action_values.put(curr_board.state, curr_board.q_values);
-
         // here is where we update count(s,a) by 1
         state_action_count.get(curr_board.state)[chosenMoveCopy] += 1;
-        game.makeMove(chosenMoveCopy);
+
+        if (opponentEndedGame) {
+            opponentBoard.q_values[opponentMove] = Double.toString(opponentQ);
+            state_action_values.put(opponentBoard.state, opponentBoard.q_values);
+            state_action_count.get(opponentBoard.state)[opponentMove] += 1;
+        }
     }
 
     // helper function
