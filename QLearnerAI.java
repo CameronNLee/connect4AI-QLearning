@@ -109,7 +109,7 @@ public class QLearnerAI extends AIModule{
 
     private int selectMove(ArrayList<Integer> legalActions, String[] q_values){
         final Random r = new Random();
-        int epsilon = r.nextInt(3); // 0 or 1
+        int epsilon = r.nextInt(2); // 0 or 1
         int action;
         if (epsilon == 0 || !isModified(q_values)) { // set chosenMove to a random, legal column (explore paths)
             action = legalActions.get(r.nextInt(legalActions.size()));
@@ -122,13 +122,14 @@ public class QLearnerAI extends AIModule{
 
     private void updateQTable(GameStateModule game, Board curr_board){
         // update q(s, a) and count(s, a)
+        /*
         game.makeMove(chosenMove);
 
         // number of times the chosen action (i.e. chosenMove) for that chosen state
         // was called in the past. We use this to calculate the alpha value.
         int visits = state_action_count.get(curr_board.state)[chosenMove];
         int alphaValue = 1 / (1 + visits);
-        int q_value;
+        double q_value;
         double reward = 0;
 
         if (game.isGameOver()) { // then your move is rewarded either a +1 or a +0
@@ -152,13 +153,14 @@ public class QLearnerAI extends AIModule{
 
         // here is where we update q(s,a)
         // TODO: change q_value into a double type later after changing q_values, from String[] to double[].
-        //q_value = (int)((1 - alphaValue) + alphaValue*(reward + gamma));
+        //q_value = ((1 - alphaValue) + alphaValue*(reward + gamma));
         q_value = (int)reward;
-        curr_board.q_values[chosenMove] = Integer.toString(q_value);
+        curr_board.q_values[chosenMove] = Double.toString(q_value);
         state_action_values.put(curr_board.state, curr_board.q_values);
 
         // here is where we update count(s,a) by 1
         state_action_count.get(curr_board.state)[chosenMove] += 1;
+        */
     }
 
     // helper function
@@ -175,11 +177,16 @@ public class QLearnerAI extends AIModule{
                 maxIndex = i;
             }
         }
+        if (!legalActions.contains(maxIndex)) {
+            maxIndex = legalActions.get(0);
+        }
+        /*
         System.out.print("Q Vals: ");
         System.out.println(q_vals);
         System.out.print("Legal Actions: ");
         System.out.println(legalActions);
         System.out.println(maxIndex);
+        */
         return maxIndex;
     }
 
