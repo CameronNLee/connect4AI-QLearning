@@ -128,12 +128,13 @@ public class QLearnerAI extends AIModule{
         // number of times the chosen action (i.e. chosenMove) for that chosen state
         // was called in the past. We use this to calculate the alpha value.
         int visits = state_action_count.get(curr_board.state)[chosenMoveCopy];
-        int alphaValue = 1 / (1 + visits);
-        double q_value;
+        double alphaValue = 1.0 / (1.0 + visits);
+        double q_value = 0;
+        double q_value_max = 0;
         double reward = 0;
 
         if (game.isGameOver()) { // then your move is rewarded either a +1 or a +0
-            reward = (game.getWinner() != 0) ? 1 : 0;
+            reward = (game.getWinner() != 0) ? 1 : 0.5;
         }
         else {
             // game is not over after making play as the current player; Thus:
@@ -153,8 +154,7 @@ public class QLearnerAI extends AIModule{
 
         // here is where we update q(s,a)
         // TODO: change q_value into a double type later after changing q_values, from String[] to double[].
-        //q_value = ((1 - alphaValue) + alphaValue*(reward + gamma));
-        q_value = (int)reward;
+        q_value = ( (1-alphaValue)*q_value ) + ( alphaValue*(reward + gamma*q_value_max) );
         curr_board.q_values[chosenMoveCopy] = Double.toString(q_value);
         state_action_values.put(curr_board.state, curr_board.q_values);
 
