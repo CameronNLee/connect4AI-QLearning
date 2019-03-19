@@ -32,7 +32,8 @@ public class QLearnerAI extends AIModule{
         if (is_training == 1){
             Board curr_board = getStateActionValues(game);
             chosenMove = selectMove(curr_board.legalActions, curr_board.q_values);
-            updateQTable(game, curr_board);
+            int chosenMoveCopy = chosenMove;
+            updateQTable(game, curr_board, chosenMoveCopy);
         }else{
             try{
                 Board curr_board = getStateActionValuesFromFile(game);
@@ -120,14 +121,13 @@ public class QLearnerAI extends AIModule{
         return action;
     }
 
-    private void updateQTable(GameStateModule game, Board curr_board){
+    private void updateQTable(GameStateModule game, Board curr_board, int chosenMoveCopy){
         // update q(s, a) and count(s, a)
-        /*
-        game.makeMove(chosenMove);
+        game.makeMove(chosenMoveCopy);
 
         // number of times the chosen action (i.e. chosenMove) for that chosen state
         // was called in the past. We use this to calculate the alpha value.
-        int visits = state_action_count.get(curr_board.state)[chosenMove];
+        int visits = state_action_count.get(curr_board.state)[chosenMoveCopy];
         int alphaValue = 1 / (1 + visits);
         double q_value;
         double reward = 0;
@@ -155,12 +155,11 @@ public class QLearnerAI extends AIModule{
         // TODO: change q_value into a double type later after changing q_values, from String[] to double[].
         //q_value = ((1 - alphaValue) + alphaValue*(reward + gamma));
         q_value = (int)reward;
-        curr_board.q_values[chosenMove] = Double.toString(q_value);
+        curr_board.q_values[chosenMoveCopy] = Double.toString(q_value);
         state_action_values.put(curr_board.state, curr_board.q_values);
 
         // here is where we update count(s,a) by 1
-        state_action_count.get(curr_board.state)[chosenMove] += 1;
-        */
+        state_action_count.get(curr_board.state)[chosenMoveCopy] += 1;
     }
 
     // helper function
