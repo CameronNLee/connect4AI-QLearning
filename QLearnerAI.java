@@ -139,7 +139,9 @@ public class QLearnerAI extends AIModule{
         else {
             // game is not over after making play as the current player; Thus:
             // simulate opponent move here using the updated game board
+            Board nextState = getStateActionValues(game);
             getNextMove(game); // if doing this causes the game to end, assign -1 for chosenMove.
+            q_value_max = getMaxQValue(state_action_values.get(nextState.state));
             if (game.isGameOver()) {
                 if (game.getWinner() != 0) {
                     reward = -1;
