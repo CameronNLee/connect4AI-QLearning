@@ -163,6 +163,14 @@ public class QLearnerAI extends AIModule{
     }
 
     // helper function
+    private double getMaxQValue(String[] q_values) {
+        ArrayList<Double> q_vals = new ArrayList<Double>();
+        for (String element : q_values) {
+            q_vals.add(Double.valueOf(element));
+        }
+        return Collections.max(q_vals);
+    }
+
     private int getMaxQValueAction(ArrayList<Integer> legalActions, String[] q_values) {
         ArrayList<Integer> q_vals = new ArrayList<Integer>();
         for (String element : q_values) {
