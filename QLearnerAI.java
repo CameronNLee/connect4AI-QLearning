@@ -222,8 +222,11 @@ public class QLearnerAI extends AIModule{
     }
 
     private boolean isModified(String[] q_values) {
-        int[] q_vals = Arrays.stream(q_values).mapToInt(Integer::parseInt).toArray();
-        for (int i : q_vals) {
+        ArrayList<Double> q_vals = new ArrayList<Double>();
+        for (String element : q_values) {
+            q_vals.add(Double.valueOf(element));
+        }
+        for (Double i : q_vals) {
             if (i != 0) {
                 return true;
             }
