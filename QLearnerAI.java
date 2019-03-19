@@ -107,12 +107,12 @@ public class QLearnerAI extends AIModule{
 
     }
 
-
     private int selectMove(ArrayList<Integer> legalActions, String[] q_values){
         final Random r = new Random();
         int epsilon = r.nextInt(2); // 0 or 1
         int action;
         if (epsilon == 0 || !isModified(q_values)) { // set chosenMove to a random, legal column (explore paths)
+            System.out.println(legalActions.size());
             action = legalActions.get(r.nextInt(legalActions.size()));
         }
         else { // set chosenMove to the maximum of q_values for that given state (exploit path)
@@ -125,43 +125,50 @@ public class QLearnerAI extends AIModule{
         // update q(s, a) and count(s, a)
         game.makeMove(chosenMoveCopy);
 
-        // number of times the chosen action (i.e. chosenMove) for that chosen state
-        // was called in the past. We use this to calculate the alpha value.
-        int visits = state_action_count.get(curr_board.state)[chosenMoveCopy];
-        double alphaValue = 1.0 / (1.0 + visits);
-        double q_value = 0;
-        double q_value_max = 0;
-        double reward = 0;
+        Boolean playerWon = false;
+        Double reward = 0.0;
+        Double maxQValue = 0.0;
+        Integer visits = state_action_count.get(curr_board.state)[chosenMoveCopy];
+        Double alphaValue = 1.0 / (1.0 + visits);
+        Double q = Double.valueOf(curr_board.q_values[chosenMoveCopy]);
 
-        if (game.isGameOver()) { // then your move is rewarded either a +1 or a +0
+        if (game.isGameOver()) { // player won, or there was a draw on the player's move
             reward = (game.getWinner() != 0) ? 1 : 0.5;
+            playerWon = true;
+            game.unMakeMove();
         }
         else {
-            // game is not over after making play as the current player; Thus:
-            // simulate opponent move here using the updated game board
-            Board nextState = getStateActionValues(game);
-            getNextMove(game); // if doing this causes the game to end, assign -1 for chosenMove.
-            q_value_max = getMaxQValue(state_action_values.get(nextState.state));
-            if (game.isGameOver()) {
-                if (game.getWinner() != 0) {
-                    reward = -1;
-                }
-                else if (game.getWinner() == 0) {
-                    reward = 0;
-                }
+            Board opponentBoard = getStateActionValues(game);
+            game.makeMove(selectMove(opponentBoard.legalActions, opponentBoard.q_values));
+        }
+
+        if (game.isGameOver() && !playerWon) { // opponent won the game, or there was a draw on the opponent's move
+            if (game.getWinner() != 0) {
+                reward = -1.0;
             }
+            else if (game.getWinner() == 0) {
+                reward = 0.0;
+            }
+        }
+        else {
+            Board sPrime = getStateActionValues(game);
+            maxQValue = Double.valueOf(sPrime.q_values[getMaxQValueAction(sPrime.legalActions, sPrime.q_values)]);
+            //q = reward + gamma * maxQValue; //deterministic
+
             game.unMakeMove();
-            // Need to somehow backpropagate that -1 result...
+            game.unMakeMove();
         }
 
         // here is where we update q(s,a)
         // TODO: change q_value into a double type later after changing q_values, from String[] to double[].
-        q_value = ( (1-alphaValue)*q_value ) + ( alphaValue*(reward + gamma*q_value_max) );
-        curr_board.q_values[chosenMoveCopy] = Double.toString(q_value);
+        q = ((1-alphaValue) * q) + (alphaValue * (reward + gamma * maxQValue));
+
+        curr_board.q_values[chosenMoveCopy] = Double.toString(q);
         state_action_values.put(curr_board.state, curr_board.q_values);
 
         // here is where we update count(s,a) by 1
         state_action_count.get(curr_board.state)[chosenMoveCopy] += 1;
+        game.makeMove(chosenMoveCopy);
     }
 
     // helper function
@@ -180,37 +187,16 @@ public class QLearnerAI extends AIModule{
         }
         // we want the column associated with the highest Q value,
         // NOT the highest Q value itself
-/*        int maxIndex = 0;
+        int maxIndex = 0;
         for (int i = 1; i < q_vals.size(); i++) {
             if (legalActions.contains(i) && q_vals.get(i) >= q_vals.get(maxIndex)) {
                 maxIndex = i;
             }
         }
-        if (!legalActions.contains(maxIndex)) {
-            maxIndex = legalActions.get(0);
-        }*/
-
-        int zeroCount = 0;
-        ArrayList<Integer> zeroLegalActions = new ArrayList<Integer>();
-        for (int i : legalActions) {
-            if (q_vals.get(i) == 0) {
-                ++zeroCount;
-                zeroLegalActions.add(i);
-            }
-        }
         Random r = new Random();
-        // assigning randomly picked column to maxIndex
-        int maxIndex = legalActions.get(0);
-        if (zeroCount != 0) {
-            maxIndex = zeroLegalActions.get(r.nextInt(zeroCount));
+        if (!legalActions.contains(maxIndex)) {
+            maxIndex = legalActions.get(r.nextInt(legalActions.size()));
         }
-
-        for (int index : legalActions) {
-            if (q_vals.get(index) > q_vals.get(maxIndex)) {
-                maxIndex = index;
-            }
-        }
-
         /*
         System.out.print("Q Vals: ");
         System.out.println(q_vals);
