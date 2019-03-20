@@ -140,19 +140,21 @@ public class QLearnerAI extends AIModule{
             reward = (game.getWinner() != 0) ? 1 : 0.5;
             playerEndedGame = true;
             game.unMakeMove();
+            updateQTableHelper(curr_board, chosenMoveCopy, reward);
         }
-        else {
-            opponentBoard = getStateActionValues(game);
-            opponentMove = selectMove(opponentBoard.legalActions, opponentBoard.q_values);
-            opponentQ = Double.valueOf(opponentBoard.q_values[opponentMove]);
-            game.makeMove(opponentMove);
-        }
+
+        opponentBoard = getStateActionValues(game);
+        opponentMove = selectMove(opponentBoard.legalActions, opponentBoard.q_values);
+        game.makeMove(opponentMove);
 
         if (game.isGameOver() && !playerEndedGame) { // opponent won the game, or there was a draw on the opponent's move
             reward = (game.getWinner() != 0) ? -1.0 : 0.5;
             opponentEndedGame = true;
+            Double opponentReward = (reward == -1.0) ? 1.0 : 0.5;
             game.unMakeMove();
+            updateQTableHelper(curr_board, opponentMove, opponentReward);
             game.unMakeMove();
+            updateQTableHelper(curr_board, chosenMoveCopy, reward);
         }
 
         if (!playerEndedGame && !opponentEndedGame) { // no terminal states found
@@ -161,23 +163,15 @@ public class QLearnerAI extends AIModule{
             maxQValue = Double.valueOf(sPrime.q_values[getMaxQValueAction(sPrime.legalActions, sPrime.q_values)]);
             //q = reward + gamma * maxQValue; //deterministic
             game.unMakeMove();
+            q = ((1-alpha) * q) + (alpha * (reward + gamma * maxQValue));
+            updateQTableHelper(curr_board, chosenMoveCopy, q);
         }
+    }
 
-        // here is where we update q(s,a)
-        // TODO: change q_value into a double type later after changing q_values, from String[] to double[].
-        q = ((1-alpha) * q) + (alpha * (reward + gamma * maxQValue));
-        opponentQ = ((1-alpha) * opponentQ) + (alpha * (reward + gamma * maxQValue));
-
-        curr_board.q_values[chosenMoveCopy] = Double.toString(q);
+    private void updateQTableHelper(Board curr_board, int move, Double q) {
+        curr_board.q_values[move] = Double.toString(q);
         state_action_values.put(curr_board.state, curr_board.q_values);
-        // here is where we update count(s,a) by 1
-        state_action_count.get(curr_board.state)[chosenMoveCopy] += 1;
-
-        if (opponentEndedGame) {
-            opponentBoard.q_values[opponentMove] = Double.toString(opponentQ);
-            state_action_values.put(opponentBoard.state, opponentBoard.q_values);
-            state_action_count.get(opponentBoard.state)[opponentMove] += 1;
-        }
+        state_action_count.get(curr_board.state)[move] += 1;
     }
 
     // helper function
