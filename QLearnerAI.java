@@ -109,13 +109,12 @@ public class QLearnerAI extends AIModule{
 
     private int selectMove(ArrayList<Integer> legalActions, String[] q_values){
         final Random r = new Random();
-        int epsilon = r.nextInt(10); // 0 or 1
+        double epsilon = r.nextInt(10);
         int action;
-        //if (epsilon == 0 || !isModified(q_values)) { // set chosenMove to a random, legal column (explore paths)
-        if (is_training == 1 && epsilon == 0) {
-            action = legalActions.get(r.nextInt(legalActions.size()));
+        if (is_training == 1 && epsilon != 0) {
+            action = legalActions.get(r.nextInt(legalActions.size())); // exploration: pick random legal column
         }
-        else { // set chosenMove to the maximum of q_values for that given state (exploit path)
+        else { // exploitation: pick legal column associated with the max q value
             action = getMaxQValueAction(legalActions, q_values);
         }
         return action;
@@ -129,6 +128,7 @@ public class QLearnerAI extends AIModule{
         Double maxQValue = 0.0;
         Integer visits = state_action_count.get(curr_board.state)[chosenMoveCopy];
         Double alpha = 1.0 / (1.0 + visits);
+
         Boolean playerEndedGame = false;
         Boolean opponentEndedGame = false;
         Board opponentBoard = curr_board;
@@ -151,8 +151,7 @@ public class QLearnerAI extends AIModule{
             Double opponentReward = (reward == -1.0) ? 1.0 : 0.5;
             game.unMakeMove();
             game.unMakeMove();
-            maxQValue = Double.valueOf(opponentBoard.q_values[getMaxQValueAction(opponentBoard.legalActions, opponentBoard.q_values)]);
-            q = ((1-alpha) * q) + (alpha * (reward + gamma * maxQValue));
+
             updateQTableHelper(opponentBoard, opponentMove, opponentReward);
             updateQTableHelper(curr_board, chosenMoveCopy, reward);
         }
@@ -161,8 +160,8 @@ public class QLearnerAI extends AIModule{
             game.unMakeMove();
             Board sPrime = getStateActionValues(game);
             maxQValue = Double.valueOf(sPrime.q_values[getMaxQValueAction(sPrime.legalActions, sPrime.q_values)]);
-            //q = reward + gamma * maxQValue; //deterministic
             game.unMakeMove();
+            reward = 0.0;
             q = ((1-alpha) * q) + (alpha * (reward + gamma * maxQValue));
             updateQTableHelper(curr_board, chosenMoveCopy, q);
         }
@@ -172,15 +171,6 @@ public class QLearnerAI extends AIModule{
         curr_board.q_values[move] = Double.toString(q);
         state_action_values.put(curr_board.state, curr_board.q_values);
         state_action_count.get(curr_board.state)[move] += 1;
-    }
-
-    // helper function
-    private double getMaxQValue(String[] q_values) {
-        ArrayList<Double> q_vals = new ArrayList<Double>();
-        for (String element : q_values) {
-            q_vals.add(Double.valueOf(element));
-        }
-        return Collections.max(q_vals);
     }
 
     private int getMaxQValueAction(ArrayList<Integer> legalActions, String[] q_values) {
@@ -221,78 +211,11 @@ public class QLearnerAI extends AIModule{
             }
         }
         Random r = new Random();
+        // pick randomly between columns with same max values
         if ( sameCount > 0 && (q_vals.get(sameMaxActions.get(0)) >= q_vals.get(maxIndex)) ) {
             maxIndex = sameMaxActions.get(r.nextInt(sameMaxActions.size()));
         }
-        /*
-        System.out.print("Q Vals: ");
-        System.out.println(q_vals);
-        System.out.print("Legal Actions: ");
-        System.out.println(legalActions);
-        System.out.println(maxIndex);
-        */
         return maxIndex;
     }
 
-    private boolean isModified(String[] q_values) {
-        ArrayList<Double> q_vals = new ArrayList<Double>();
-        for (String element : q_values) {
-            q_vals.add(Double.valueOf(element));
-        }
-        for (Double i : q_vals) {
-            if (i != 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-/*    private int determineStreaks(GameStateModule game, Board currBoard) {
-        int streakBalance = 0;
-        streakBalance += determineHorizontalStreaks(game, currBoard, 3);
-        //streakBalance += determineVerticalStreaks(leaf, 3);
-        //streakBalance += determineDiagonalStreaks(leaf, 3);
-        return streakBalance;
-    }
-
-    private int determineHorizontalStreaks(GameStateModule game, Board currBoard, int totalStreak) {
-        int playerStreak = 0;
-        int enemyStreak = 0;
-        int totalPlayerStreaks = 0;
-        int totalEnemyStreaks = 0;
-        int occupies = 0;
-
-        for (int row = 0; row < game.getHeight(); row++) {
-            for (int col = 0; col < game.getWidth(); col++) {
-                occupies = leaf.getState().getAt(col,row);
-                if (occupies == player) {
-                    playerStreak += 1;
-                    enemyStreak = 0;
-                }
-                else if (occupies == enemy) {
-                    enemyStreak += 1;
-                    playerStreak = 0;
-                }
-                else {
-                    if (playerStreak > 0) {
-                        playerStreak += 1;
-                    }
-                    else if (enemyStreak > 0) {
-                        enemyStreak += 1;
-                    }
-                }
-                if (playerStreak >= totalStreak) {
-                    totalPlayerStreaks += 1;
-                    playerStreak = 0;
-                }
-                if (enemyStreak >= totalStreak) {
-                    totalEnemyStreaks += 1;
-                    enemyStreak = 0;
-                }
-            }
-            playerStreak = 0;
-            enemyStreak = 0;
-        }
-        return (totalPlayerStreaks - totalEnemyStreaks);
-    }*/
 }
