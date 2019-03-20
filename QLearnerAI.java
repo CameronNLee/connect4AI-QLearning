@@ -109,10 +109,10 @@ public class QLearnerAI extends AIModule{
 
     private int selectMove(ArrayList<Integer> legalActions, String[] q_values){
         final Random r = new Random();
-        //int epsilon = r.nextInt(1); // 0 or 1
+        int epsilon = r.nextInt(10); // 0 or 1
         int action;
         //if (epsilon == 0 || !isModified(q_values)) { // set chosenMove to a random, legal column (explore paths)
-        if (is_training == 1) {
+        if (is_training == 1 && epsilon == 0) {
             action = legalActions.get(r.nextInt(legalActions.size()));
         }
         else { // set chosenMove to the maximum of q_values for that given state (exploit path)
@@ -150,8 +150,10 @@ public class QLearnerAI extends AIModule{
             opponentEndedGame = true;
             Double opponentReward = (reward == -1.0) ? 1.0 : 0.5;
             game.unMakeMove();
-            updateQTableHelper(opponentBoard, opponentMove, opponentReward);
             game.unMakeMove();
+            maxQValue = Double.valueOf(opponentBoard.q_values[getMaxQValueAction(opponentBoard.legalActions, opponentBoard.q_values)]);
+            q = ((1-alpha) * q) + (alpha * (reward + gamma * maxQValue));
+            updateQTableHelper(opponentBoard, opponentMove, opponentReward);
             updateQTableHelper(curr_board, chosenMoveCopy, reward);
         }
 
@@ -182,21 +184,45 @@ public class QLearnerAI extends AIModule{
     }
 
     private int getMaxQValueAction(ArrayList<Integer> legalActions, String[] q_values) {
+        if (legalActions.size() == 1) {
+            return legalActions.get(0);
+        }
         ArrayList<Double> q_vals = new ArrayList<Double>();
         for (String element : q_values) {
             q_vals.add(Double.valueOf(element));
         }
         // we want the column associated with the highest Q value,
         // NOT the highest Q value itself
-        int maxIndex = 0;
-        for (int i = 1; i < q_vals.size(); i++) {
-            if (legalActions.contains(i) && q_vals.get(i) >= q_vals.get(maxIndex)) {
+        int maxIndex = legalActions.get(0);
+        int sameCount = 0;
+        boolean skippedFirst = false;
+        boolean firstSameIncluded = false;
+        ArrayList<Integer> sameMaxActions = new ArrayList<Integer>();
+        for (int i : legalActions) {
+            if (!skippedFirst) {
+                skippedFirst = true;
+                continue;
+            }
+            if (q_vals.get(i) > q_vals.get(maxIndex)) {
                 maxIndex = i;
+                sameMaxActions.clear();
+                sameCount = 0;
+            }
+            else if (q_vals.get(i).equals(q_vals.get(maxIndex))) {
+                if (!firstSameIncluded) {
+                    sameCount += 2;
+                    sameMaxActions.add(maxIndex);
+                    firstSameIncluded = true;
+                }
+                else {
+                    ++sameCount;
+                }
+                sameMaxActions.add(i);
             }
         }
         Random r = new Random();
-        if (!legalActions.contains(maxIndex)) {
-            maxIndex = legalActions.get(r.nextInt(legalActions.size()));
+        if ( sameCount > 0 && (q_vals.get(sameMaxActions.get(0)) >= q_vals.get(maxIndex)) ) {
+            maxIndex = sameMaxActions.get(r.nextInt(sameMaxActions.size()));
         }
         /*
         System.out.print("Q Vals: ");
@@ -221,7 +247,7 @@ public class QLearnerAI extends AIModule{
         return false;
     }
 
-    private int determineStreaks(GameStateModule game, Board currBoard) {
+/*    private int determineStreaks(GameStateModule game, Board currBoard) {
         int streakBalance = 0;
         streakBalance += determineHorizontalStreaks(game, currBoard, 3);
         //streakBalance += determineVerticalStreaks(leaf, 3);
@@ -268,5 +294,5 @@ public class QLearnerAI extends AIModule{
             enemyStreak = 0;
         }
         return (totalPlayerStreaks - totalEnemyStreaks);
-    }
+    }*/
 }
