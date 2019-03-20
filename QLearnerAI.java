@@ -23,7 +23,6 @@ public class QLearnerAI extends AIModule{
             this.state = state;
             this.q_values = q_values;
         }
-
     }
 
 
@@ -218,6 +217,7 @@ public class QLearnerAI extends AIModule{
         return maxIndex;
     }
 
+    /*
     private int determineStreaks(GameStateModule game, Board currBoard) {
         int streakBalance = 0;
         streakBalance += determineHorizontalStreaks(game, currBoard, 3);
@@ -266,6 +266,36 @@ public class QLearnerAI extends AIModule{
         }
         return (totalPlayerStreaks - totalEnemyStreaks);
     }
+    */
 
+    public int determineVerticalThreat(GameStateModule game, Board currBoard, int col) {
+        // If player 1 streak (2-in-a-row) return 1, if player 2 streak, return 2, else 0
+        int playerStreak = 0;
+        int enemyStreak = 0;
+        int occupies = 0;
+        int threatLevel = 0;
 
+        for (int row = 0; row < game.getHeight(); row++) {
+            occupies = game.getAt(col,row);
+            if (occupies == game.getActivePlayer()) {
+                playerStreak += 1;
+                enemyStreak = 0;
+            }
+            else if (occupies != 0) {
+                enemyStreak += 1;
+                playerStreak = 0;
+            }
+        }
+
+        if (enemyStreak > 1 && game.getHeightAt(col) =< (game.getHeight() - enemyStreak)) {
+            if (enemyStreak == 2) {
+                threatLevel = 1;
+            }
+            else if (enemyStreak == 3) {
+                threatLevel = 2;
+            }
+        }
+
+        return threatLevel;
+    }
 }
