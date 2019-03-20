@@ -109,9 +109,10 @@ public class QLearnerAI extends AIModule{
 
     private int selectMove(ArrayList<Integer> legalActions, String[] q_values){
         final Random r = new Random();
-        int epsilon = r.nextInt(2); // 0 or 1
+        //int epsilon = r.nextInt(1); // 0 or 1
         int action;
-        if (epsilon == 0 || !isModified(q_values)) { // set chosenMove to a random, legal column (explore paths)
+        //if (epsilon == 0 || !isModified(q_values)) { // set chosenMove to a random, legal column (explore paths)
+        if (is_training == 1) {
             action = legalActions.get(r.nextInt(legalActions.size()));
         }
         else { // set chosenMove to the maximum of q_values for that given state (exploit path)
