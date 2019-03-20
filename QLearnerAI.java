@@ -218,19 +218,6 @@ public class QLearnerAI extends AIModule{
         return maxIndex;
     }
 
-    private boolean isModified(String[] q_values) {
-        ArrayList<Double> q_vals = new ArrayList<Double>();
-        for (String element : q_values) {
-            q_vals.add(Double.valueOf(element));
-        }
-        for (Double i : q_vals) {
-            if (i != 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private int determineStreaks(GameStateModule game, Board currBoard) {
         int streakBalance = 0;
         streakBalance += determineHorizontalStreaks(game, currBoard, 3);
