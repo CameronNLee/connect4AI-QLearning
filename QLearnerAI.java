@@ -125,7 +125,6 @@ public class QLearnerAI extends AIModule{
         // update q(s, a) and count(s, a)
 
         Double q = Double.valueOf(curr_board.q_values[chosenMoveCopy]);
-        Double opponentQ = 0.0;
         Double reward = 0.0;
         Double maxQValue = 0.0;
         Integer visits = state_action_count.get(curr_board.state)[chosenMoveCopy];
@@ -133,7 +132,6 @@ public class QLearnerAI extends AIModule{
         Boolean playerEndedGame = false;
         Boolean opponentEndedGame = false;
         Board opponentBoard = curr_board;
-        int opponentMove = -1;
 
         game.makeMove(chosenMoveCopy);
         if (game.isGameOver()) { // player won, or there was a draw on the player's move
@@ -144,7 +142,7 @@ public class QLearnerAI extends AIModule{
         }
 
         opponentBoard = getStateActionValues(game);
-        opponentMove = selectMove(opponentBoard.legalActions, opponentBoard.q_values);
+        int opponentMove = selectMove(opponentBoard.legalActions, opponentBoard.q_values);
         game.makeMove(opponentMove);
 
         if (game.isGameOver() && !playerEndedGame) { // opponent won the game, or there was a draw on the opponent's move
@@ -152,7 +150,7 @@ public class QLearnerAI extends AIModule{
             opponentEndedGame = true;
             Double opponentReward = (reward == -1.0) ? 1.0 : 0.5;
             game.unMakeMove();
-            updateQTableHelper(curr_board, opponentMove, opponentReward);
+            updateQTableHelper(opponentBoard, opponentMove, opponentReward);
             game.unMakeMove();
             updateQTableHelper(curr_board, chosenMoveCopy, reward);
         }
@@ -223,4 +221,52 @@ public class QLearnerAI extends AIModule{
         return false;
     }
 
+    private int determineStreaks(GameStateModule game, Board currBoard) {
+        int streakBalance = 0;
+        streakBalance += determineHorizontalStreaks(game, currBoard, 3);
+        //streakBalance += determineVerticalStreaks(leaf, 3);
+        //streakBalance += determineDiagonalStreaks(leaf, 3);
+        return streakBalance;
+    }
+
+    private int determineHorizontalStreaks(GameStateModule game, Board currBoard, int totalStreak) {
+        int playerStreak = 0;
+        int enemyStreak = 0;
+        int totalPlayerStreaks = 0;
+        int totalEnemyStreaks = 0;
+        int occupies = 0;
+
+        for (int row = 0; row < game.getHeight(); row++) {
+            for (int col = 0; col < game.getWidth(); col++) {
+                occupies = leaf.getState().getAt(col,row);
+                if (occupies == player) {
+                    playerStreak += 1;
+                    enemyStreak = 0;
+                }
+                else if (occupies == enemy) {
+                    enemyStreak += 1;
+                    playerStreak = 0;
+                }
+                else {
+                    if (playerStreak > 0) {
+                        playerStreak += 1;
+                    }
+                    else if (enemyStreak > 0) {
+                        enemyStreak += 1;
+                    }
+                }
+                if (playerStreak >= totalStreak) {
+                    totalPlayerStreaks += 1;
+                    playerStreak = 0;
+                }
+                if (enemyStreak >= totalStreak) {
+                    totalEnemyStreaks += 1;
+                    enemyStreak = 0;
+                }
+            }
+            playerStreak = 0;
+            enemyStreak = 0;
+        }
+        return (totalPlayerStreaks - totalEnemyStreaks);
+    }
 }
