@@ -8,7 +8,8 @@ public class QLearnerAI extends AIModule{
     private static double gamma = 0.99;
     public static HashMap<String, int[]> state_action_count = new HashMap<>();
     public static HashMap<String, String[]> state_action_values = new HashMap<>();
-    public static HashMap<String, String[]> state_action_seeded = new HashMap<>();
+    public static HashMap<String, String[]> state_action_seed_check = new HashMap<>();
+
     int is_training;
 
     public QLearnerAI(int is_training){
@@ -157,10 +158,31 @@ public class QLearnerAI extends AIModule{
         }
 
         if (!playerEndedGame && !opponentEndedGame) { // no terminal states found
+
             game.unMakeMove();
             Board sPrime = getStateActionValues(game);
             maxQValue = Double.valueOf(sPrime.q_values[getMaxQValueAction(sPrime.legalActions, sPrime.q_values)]);
             game.unMakeMove();
+
+
+            if(state_action_seed_check.get(curr_board.state) != null) {
+                String[] seedStrings = state_action_seed_check.get(curr_board.state);
+                Double seedOfChosenMove = Double.valueOf(seedStrings[chosenMoveCopy]);
+
+                if (seedOfChosenMove.equals(1.0)) {
+                    return;
+                }
+
+            }
+            else { // attempt to generate seeds for current state
+                seedValues(game, curr_board.state);
+                // only returns seeds non-null if threat detected
+                if (state_action_seed_check.get(curr_board.state) != null) {
+                    // set q to be the seeded value
+                    q = Double.valueOf(state_action_values.get(curr_board.state)[chosenMoveCopy]);
+                }
+            }
+
             reward = 0.0;
             q = ((1-alpha) * q) + (alpha * (reward + gamma * maxQValue));
             updateQTableHelper(curr_board, chosenMoveCopy, q);
@@ -269,12 +291,48 @@ public class QLearnerAI extends AIModule{
     }
     */
 
-    public int determineVerticalThreat(GameStateModule game, Board currBoard, int col) {
-        // If player 1 streak (2-in-a-row) return 1, if player 2 streak, return 2, else 0
+    // returns a list of seeded values
+    public void seedValues(GameStateModule game, String state) {
+        String[] seededValues = new String[game.getWidth()];
+        boolean threatDetected = false;
+        for (int col = 0; col < game.getWidth(); ++col) {
+            int colThreat = determineVerticalThreat(game, col);
+            if (colThreat == 2) {
+                seededValues[col] = Double.toString(0.9);
+                threatDetected = true;
+            }
+            else if (colThreat == 1) {
+                seededValues[col] = Double.toString(0.8);
+                threatDetected = true;
+            }
+            else {
+                seededValues[col] = Double.toString(0.0);
+            }
+        } // end of for
+
+        if (threatDetected) {
+            state_action_seed_check.put(state, new String[]{"1.0", "1.0", "1.0", "1.0"});
+        }
+        // update state s with seeds
+        state_action_values.put(state, seededValues);
+    }
+
+    // used only for enemies, not yourself
+    public int determineVerticalThreat(GameStateModule game, int col) {
         int playerStreak = 0;
         int enemyStreak = 0;
         int occupies = 0;
         int threatLevel = 0;
+
+/*        game.makeMove(1);
+        game.makeMove(2);
+        game.makeMove(2);
+        game.makeMove(1);
+
+        game.makeMove(3);
+        game.makeMove(1);
+        game.makeMove(3);
+        game.makeMove(0);*/
 
         for (int row = 0; row < game.getHeight(); row++) {
             occupies = game.getAt(col,row);
@@ -288,7 +346,7 @@ public class QLearnerAI extends AIModule{
             }
         }
 
-        if (enemyStreak > 1 && game.getHeightAt(col) =< (game.getHeight() - enemyStreak)) {
+        if (enemyStreak > 1 && game.getHeightAt(col) <= (game.getHeight() - enemyStreak)) {
             if (enemyStreak == 2) {
                 threatLevel = 1;
             }
