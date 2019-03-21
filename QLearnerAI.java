@@ -249,7 +249,6 @@ public class QLearnerAI extends AIModule{
 
     // returns a list of seeded values
     public void seedValues(GameStateModule game, String state, ArrayList<Integer> legalActions) {
-        int THREAT_LEVEL_MIDNIGHT = 6;
         String[] seededValues = new String[game.getWidth()];
         boolean threatDetected = false;
         int colThreat = 0;
@@ -281,6 +280,13 @@ public class QLearnerAI extends AIModule{
             default:
                 seededValues[col] = Double.toString(0.0);
             }
+        }
+
+        int diagCol = diagonalThreats(game);
+        if (diagCol != -1) {
+            // set blocking diagonals as maximum priority; montecarlo LOVES diagonal wins
+            seededValues[diagCol] = Double.toString(1.0);
+            threatDetected = true;
         }
 
         if (threatDetected) {
@@ -326,12 +332,6 @@ public class QLearnerAI extends AIModule{
         int occupies = 0;
         int threatLevel = 0;
         int moveRow = game.getHeightAt(move);
-/*        System.out.println(move);
-        System.out.println("Move position: " +  moveRow);
-        if (moveRow == 4) {
-            System.out.println("debug");
-        }*/
-
         // rightward loop
         if (move + 1 < game.getWidth()) {
             for (int position = moveRow + game.getWidth(), col = move+1; col < game.getWidth()-1; position += game.getWidth(), col++) {
@@ -371,4 +371,85 @@ public class QLearnerAI extends AIModule{
 
         return threatLevel;
     }
+
+    public int diagonalThreats(GameStateModule game) {
+        int enemyStreak = 0;
+        int diag = 0;
+        int occupies;
+
+        boolean upRightIsBlocked = false;
+        boolean bottomRightIsBlocked = false;
+
+        int blockingCol = -1; // if this function returns this value, no diagonalThreats detected
+
+        // up-right from bottom-left
+        for (int i = 0; i < game.getWidth(); ++i) {
+            occupies = game.getAt(i,i);
+            if (occupies == game.getActivePlayer()) {
+                enemyStreak = 0;
+                upRightIsBlocked = true;
+            }
+            else if (occupies != 0) {
+                enemyStreak++;
+            }
+        }
+        if (enemyStreak >= 1 && !upRightIsBlocked) {
+            // check if it's a threat we can directly block
+            if (game.getAt(0,0) == 0) {
+                blockingCol = 0;
+            }
+            else if (game.getAt(1,1) == 0 && game.getAt(1,0) != 0) {
+                blockingCol = 1;
+            }
+            else if (game.getAt(2,2) == 0 && game.getAt(2,1) != 0) {
+                blockingCol = 2;
+            }
+            else if (game.getAt(3,3) == 0 && game.getAt(3,2) != 0) {
+                blockingCol = 3;
+            }
+            else {
+                blockingCol = 3;
+                bottomRightIsBlocked = true;
+            }
+        }
+
+        // bottom-right from top-left
+        int count = 0;
+        int col = 0;
+        int row = game.getHeight() - 1;
+        while (count != game.getWidth()) {
+            occupies = game.getAt(col,row);
+            if (occupies == game.getActivePlayer()) {
+                enemyStreak = 0;
+                bottomRightIsBlocked = true;
+            }
+            else if (occupies != 0) {
+                enemyStreak++;
+            }
+            ++count;
+            ++col;
+            --row;
+        }
+        if (enemyStreak >= 1 && !bottomRightIsBlocked) {
+            // check if it's a threat we can directly block
+            if (game.getAt(3,0) == 0) {
+                blockingCol = 3;
+            }
+            else if (game.getAt(2,1) == 0 && game.getAt(2,0) != 0) {
+                blockingCol = 2;
+            }
+            else if (game.getAt(1,2) == 0 && game.getAt(1,1) != 0) {
+                blockingCol = 1;
+            }
+            else if (game.getAt(0,3) == 0 && game.getAt(0,2) != 0) {
+                blockingCol = 0;
+            }
+            else {
+                blockingCol = 0;
+            }
+        }
+        return blockingCol;
+    }
+
+
 }
