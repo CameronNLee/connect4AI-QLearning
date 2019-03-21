@@ -126,7 +126,7 @@ public class QLearnerAI extends AIModule{
         // update q(s, a) and count(s, a)
 
         Double q = Double.valueOf(curr_board.q_values[chosenMoveCopy]);
-        Double seed = 0.0;
+        double seed = -10;
         Double reward = 0.0;
         Double maxQValue = 0.0;
         Integer visits = state_action_count.get(curr_board.state)[chosenMoveCopy];
@@ -135,7 +135,6 @@ public class QLearnerAI extends AIModule{
         Boolean playerEndedGame = false;
         Boolean opponentEndedGame = false;
         Boolean seeded = false;
-        double seed = -10;
         Board opponentBoard = curr_board;
 
         game.makeMove(chosenMoveCopy);
@@ -256,7 +255,13 @@ public class QLearnerAI extends AIModule{
         int colThreat = 0;
         int horzThreat = 0;
         int threatLevel = 0;
-        for (int col : legalActions) {
+        for (int col = 0; col < game.getWidth(); col++) {
+
+            if (!legalActions.contains(col)) {
+                seededValues[col] = Double.toString(0.0);
+                continue;
+            }
+
             colThreat = determineVerticalThreat(game, col);
             horzThreat = determineHorizontalThreat(game, col);
             threatLevel = colThreat + horzThreat;
