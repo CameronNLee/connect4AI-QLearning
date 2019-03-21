@@ -268,7 +268,7 @@ public class QLearnerAI extends AIModule{
             default:
                 seededValues[col] = Double.toString(0.0);
             }
-        } // end of for
+        }
 
         if (threatDetected) {
             state_action_seed_check.put(state, new String[]{"1.0", "1.0", "1.0", "1.0"});
@@ -313,12 +313,14 @@ public class QLearnerAI extends AIModule{
         int enemyStreak = 0;
         int occupies = 0;
         int threatLevel = 0;
-        int move_position = game.getHeightAt(move);
+        int moveRow = game.getHeightAt(move);
+        System.out.println(move);
+        System.out.println("Move position: " +  moveRow);
 
         // rightward loop
         if (move + 1 < game.getWidth()) {
-            for (int position = move_position + game.getWidth(); position < game.getWidth() * game.getHeight(); position += game.getWidth()) {
-                occupies = game.getAt(position, move_position);
+            for (int position = moveRow + game.getWidth(), col = move+1; col < game.getWidth()-1; position += game.getWidth(), col++) {
+                occupies = game.getAt(col, moveRow);
                 if (occupies == game.getActivePlayer()) {
                     playerStreak += 1;
                     enemyStreak = 0;
@@ -332,8 +334,8 @@ public class QLearnerAI extends AIModule{
 
         // leftward loop
         if (move - 1 > 0) {
-            for (int position = move_position; position < game.getWidth() * game.getHeight(); position -= game.getWidth()) {
-                occupies = game.getAt(position, move_position);
+            for (int position = moveRow, col = move-1; col >= 0; position -= game.getWidth(), col--) {
+                occupies = game.getAt(col, moveRow);
                 if (occupies == game.getActivePlayer()) {
                     playerStreak += 1;
                     enemyStreak = 0;
