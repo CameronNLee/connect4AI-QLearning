@@ -210,17 +210,17 @@ public class QLearnerAI extends AIModule{
         boolean skippedFirst = false;
         boolean firstSameIncluded = false;
         ArrayList<Integer> sameMaxActions = new ArrayList<Integer>();
-        for (int i : legalActions) {
+        for (int legalAction : legalActions) {
             if (!skippedFirst) {
                 skippedFirst = true;
                 continue;
             }
-            if (q_vals.get(i) > q_vals.get(maxIndex)) {
-                maxIndex = i;
+            if (q_vals.get(legalAction) > q_vals.get(maxIndex)) {
+                maxIndex = legalAction;
                 sameMaxActions.clear();
                 sameCount = 0;
             }
-            else if (q_vals.get(i).equals(q_vals.get(maxIndex))) {
+            else if (q_vals.get(legalAction).equals(q_vals.get(maxIndex))) {
                 if (!firstSameIncluded) {
                     sameCount += 2;
                     sameMaxActions.add(maxIndex);
@@ -229,7 +229,7 @@ public class QLearnerAI extends AIModule{
                 else {
                     ++sameCount;
                 }
-                sameMaxActions.add(i);
+                sameMaxActions.add(legalAction);
             }
         }
         Random r = new Random();
