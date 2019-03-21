@@ -126,6 +126,7 @@ public class QLearnerAI extends AIModule{
         // update q(s, a) and count(s, a)
 
         Double q = Double.valueOf(curr_board.q_values[chosenMoveCopy]);
+        Double seed = 0.0;
         Double reward = 0.0;
         Double maxQValue = 0.0;
         Integer visits = state_action_count.get(curr_board.state)[chosenMoveCopy];
