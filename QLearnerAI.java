@@ -132,6 +132,7 @@ public class QLearnerAI extends AIModule{
 
         Boolean playerEndedGame = false;
         Boolean opponentEndedGame = false;
+        Boolean seeded = false;
         Board opponentBoard = curr_board;
 
         game.makeMove(chosenMoveCopy);
@@ -164,28 +165,29 @@ public class QLearnerAI extends AIModule{
             maxQValue = Double.valueOf(sPrime.q_values[getMaxQValueAction(sPrime.legalActions, sPrime.q_values)]);
             game.unMakeMove();
 
-
-            if(state_action_seed_check.get(curr_board.state) != null) {
+            if (state_action_seed_check.get(curr_board.state) != null) {
                 String[] seedStrings = state_action_seed_check.get(curr_board.state);
                 Double seedOfChosenMove = Double.valueOf(seedStrings[chosenMoveCopy]);
-
                 if (seedOfChosenMove.equals(1.0)) {
                     return;
                 }
-
-            }
-            else { // attempt to generate seeds for current state
+            } else { // attempt to generate seeds for current state
                 seedValues(game, curr_board.state);
                 // only returns seeds non-null if threat detected
                 if (state_action_seed_check.get(curr_board.state) != null) {
                     // set q to be the seeded value
-                    q = Double.valueOf(state_action_values.get(curr_board.state)[chosenMoveCopy]);
+                    seed = Double.valueOf(state_action_values.get(curr_board.state)[chosenMoveCopy]);
+                    seeded = true;
                 }
             }
 
-            reward = 0.0;
-            q = ((1-alpha) * q) + (alpha * (reward + gamma * maxQValue));
-            updateQTableHelper(curr_board, chosenMoveCopy, q);
+            if (seeded) {
+                updateQTableHelper(curr_board, chosenMoveCopy, seed);
+            } else {
+                reward = 0.0;
+                q = ((1-alpha) * q) + (alpha * (reward + gamma * maxQValue));
+                updateQTableHelper(curr_board, chosenMoveCopy, q);
+            }
         }
     }
 
@@ -271,10 +273,9 @@ public class QLearnerAI extends AIModule{
         }
 
         if (threatDetected) {
+            state_action_values.put(state, seededValues);
             state_action_seed_check.put(state, new String[]{"1.0", "1.0", "1.0", "1.0"});
         }
-        // update state s with seeds
-        state_action_values.put(state, seededValues);
     }
 
     // used only for enemies, not yourself
