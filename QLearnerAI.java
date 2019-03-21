@@ -1,3 +1,4 @@
+import javax.management.RuntimeErrorException;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.io.*;
@@ -125,6 +126,7 @@ public class QLearnerAI extends AIModule{
         // update q(s, a) and count(s, a)
 
         Double q = Double.valueOf(curr_board.q_values[chosenMoveCopy]);
+        double seed = -10;
         Double reward = 0.0;
         Double maxQValue = 0.0;
         Integer visits = state_action_count.get(curr_board.state)[chosenMoveCopy];
@@ -132,6 +134,7 @@ public class QLearnerAI extends AIModule{
 
         Boolean playerEndedGame = false;
         Boolean opponentEndedGame = false;
+        Boolean seeded = false;
         Board opponentBoard = curr_board;
 
         game.makeMove(chosenMoveCopy);
@@ -164,28 +167,32 @@ public class QLearnerAI extends AIModule{
             maxQValue = Double.valueOf(sPrime.q_values[getMaxQValueAction(sPrime.legalActions, sPrime.q_values)]);
             game.unMakeMove();
 
-
-            if(state_action_seed_check.get(curr_board.state) != null) {
+            if (state_action_seed_check.get(curr_board.state) != null) {
                 String[] seedStrings = state_action_seed_check.get(curr_board.state);
                 Double seedOfChosenMove = Double.valueOf(seedStrings[chosenMoveCopy]);
-
                 if (seedOfChosenMove.equals(1.0)) {
                     return;
                 }
-
-            }
-            else { // attempt to generate seeds for current state
-                seedValues(game, curr_board.state);
+            } else { // attempt to generate seeds for current state
+                seedValues(game, curr_board.state, curr_board.legalActions);
                 // only returns seeds non-null if threat detected
                 if (state_action_seed_check.get(curr_board.state) != null) {
                     // set q to be the seeded value
-                    q = Double.valueOf(state_action_values.get(curr_board.state)[chosenMoveCopy]);
+                    seed = Double.valueOf(state_action_values.get(curr_board.state)[chosenMoveCopy]);
+                    seeded = true;
                 }
             }
 
-            reward = 0.0;
-            q = ((1-alpha) * q) + (alpha * (reward + gamma * maxQValue));
-            updateQTableHelper(curr_board, chosenMoveCopy, q);
+            if (seeded) {
+                if (seed == -10) {
+                    throw new RuntimeException("help");
+                }
+                updateQTableHelper(curr_board, chosenMoveCopy, seed);
+            } else {
+                reward = 0.0;
+                q = ((1-alpha) * q) + (alpha * (reward + gamma * maxQValue));
+                updateQTableHelper(curr_board, chosenMoveCopy, q);
+            }
         }
     }
 
@@ -210,17 +217,17 @@ public class QLearnerAI extends AIModule{
         boolean skippedFirst = false;
         boolean firstSameIncluded = false;
         ArrayList<Integer> sameMaxActions = new ArrayList<Integer>();
-        for (int i : legalActions) {
+        for (int legalAction : legalActions) {
             if (!skippedFirst) {
                 skippedFirst = true;
                 continue;
             }
-            if (q_vals.get(i) > q_vals.get(maxIndex)) {
-                maxIndex = i;
+            if (q_vals.get(legalAction) > q_vals.get(maxIndex)) {
+                maxIndex = legalAction;
                 sameMaxActions.clear();
                 sameCount = 0;
             }
-            else if (q_vals.get(i).equals(q_vals.get(maxIndex))) {
+            else if (q_vals.get(legalAction).equals(q_vals.get(maxIndex))) {
                 if (!firstSameIncluded) {
                     sameCount += 2;
                     sameMaxActions.add(maxIndex);
@@ -229,7 +236,7 @@ public class QLearnerAI extends AIModule{
                 else {
                     ++sameCount;
                 }
-                sameMaxActions.add(i);
+                sameMaxActions.add(legalAction);
             }
         }
         Random r = new Random();
@@ -240,81 +247,46 @@ public class QLearnerAI extends AIModule{
         return maxIndex;
     }
 
-    /*
-    private int determineStreaks(GameStateModule game, Board currBoard) {
-        int streakBalance = 0;
-        streakBalance += determineHorizontalStreaks(game, currBoard, 3);
-        //streakBalance += determineVerticalStreaks(leaf, 3);
-        //streakBalance += determineDiagonalStreaks(leaf, 3);
-        return streakBalance;
-    }
-
-    private int determineHorizontalStreaks(GameStateModule game, Board currBoard, int totalStreak) {
-        int playerStreak = 0;
-        int enemyStreak = 0;
-        int totalPlayerStreaks = 0;
-        int totalEnemyStreaks = 0;
-        int occupies = 0;
-
-        for (int row = 0; row < game.getHeight(); row++) {
-            for (int col = 0; col < game.getWidth(); col++) {
-                occupies = leaf.getState().getAt(col,row);
-                if (occupies == player) {
-                    playerStreak += 1;
-                    enemyStreak = 0;
-                }
-                else if (occupies == enemy) {
-                    enemyStreak += 1;
-                    playerStreak = 0;
-                }
-                else {
-                    if (playerStreak > 0) {
-                        playerStreak += 1;
-                    }
-                    else if (enemyStreak > 0) {
-                        enemyStreak += 1;
-                    }
-                }
-                if (playerStreak >= totalStreak) {
-                    totalPlayerStreaks += 1;
-                    playerStreak = 0;
-                }
-                if (enemyStreak >= totalStreak) {
-                    totalEnemyStreaks += 1;
-                    enemyStreak = 0;
-                }
-            }
-            playerStreak = 0;
-            enemyStreak = 0;
-        }
-        return (totalPlayerStreaks - totalEnemyStreaks);
-    }
-    */
-
     // returns a list of seeded values
-    public void seedValues(GameStateModule game, String state) {
+    public void seedValues(GameStateModule game, String state, ArrayList<Integer> legalActions) {
+        int THREAT_LEVEL_MIDNIGHT = 6;
         String[] seededValues = new String[game.getWidth()];
         boolean threatDetected = false;
-        for (int col = 0; col < game.getWidth(); ++col) {
-            int colThreat = determineVerticalThreat(game, col);
-            if (colThreat == 2) {
+        int colThreat = 0;
+        int horzThreat = 0;
+        int threatLevel = 0;
+        for (int col = 0; col < game.getWidth(); col++) {
+
+            if (!legalActions.contains(col)) {
+                seededValues[col] = Double.toString(0.0);
+                continue;
+            }
+
+            colThreat = determineVerticalThreat(game, col);
+            horzThreat = determineHorizontalThreat(game, col);
+            threatLevel = colThreat + horzThreat;
+            switch (threatLevel) {
+            case 4:
+                seededValues[col] = Double.toString(0.93);
+                threatDetected = true;
+            case 3:
+                seededValues[col] = Double.toString(0.92);
+                threatDetected = true;
+            case 2:
                 seededValues[col] = Double.toString(0.9);
                 threatDetected = true;
-            }
-            else if (colThreat == 1) {
+            case 1:
                 seededValues[col] = Double.toString(0.8);
                 threatDetected = true;
-            }
-            else {
+            default:
                 seededValues[col] = Double.toString(0.0);
             }
-        } // end of for
+        }
 
         if (threatDetected) {
+            state_action_values.put(state, seededValues);
             state_action_seed_check.put(state, new String[]{"1.0", "1.0", "1.0", "1.0"});
         }
-        // update state s with seeds
-        state_action_values.put(state, seededValues);
     }
 
     // used only for enemies, not yourself
@@ -323,16 +295,6 @@ public class QLearnerAI extends AIModule{
         int enemyStreak = 0;
         int occupies = 0;
         int threatLevel = 0;
-
-/*        game.makeMove(1);
-        game.makeMove(2);
-        game.makeMove(2);
-        game.makeMove(1);
-
-        game.makeMove(3);
-        game.makeMove(1);
-        game.makeMove(3);
-        game.makeMove(0);*/
 
         for (int row = 0; row < game.getHeight(); row++) {
             occupies = game.getAt(col,row);
@@ -353,6 +315,58 @@ public class QLearnerAI extends AIModule{
             else if (enemyStreak == 3) {
                 threatLevel = 2;
             }
+        }
+
+        return threatLevel;
+    }
+
+    public int determineHorizontalThreat(GameStateModule game, int move) {
+        int playerStreak = 0;
+        int enemyStreak = 0;
+        int occupies = 0;
+        int threatLevel = 0;
+        int moveRow = game.getHeightAt(move);
+/*        System.out.println(move);
+        System.out.println("Move position: " +  moveRow);
+        if (moveRow == 4) {
+            System.out.println("debug");
+        }*/
+
+        // rightward loop
+        if (move + 1 < game.getWidth()) {
+            for (int position = moveRow + game.getWidth(), col = move+1; col < game.getWidth()-1; position += game.getWidth(), col++) {
+                occupies = game.getAt(col, moveRow);
+                if (occupies == game.getActivePlayer()) {
+                    playerStreak += 1;
+                    enemyStreak = 0;
+                }
+                else if (occupies != 0) {
+                    enemyStreak += 1;
+                    playerStreak = 0;
+                }
+            }
+        }
+
+        // leftward loop
+        if (move - 1 > 0) {
+            for (int position = moveRow, col = move-1; col >= 0; position -= game.getWidth(), col--) {
+                occupies = game.getAt(col, moveRow);
+                if (occupies == game.getActivePlayer()) {
+                    playerStreak += 1;
+                    enemyStreak = 0;
+                }
+                else if (occupies != 0) {
+                    enemyStreak += 1;
+                    playerStreak = 0;
+                }
+            }
+        }
+
+        if (enemyStreak == 2) {
+            threatLevel = 1;
+        }
+        else if (enemyStreak == 3) {
+            threatLevel = 2;
         }
 
         return threatLevel;
