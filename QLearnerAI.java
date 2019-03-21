@@ -161,16 +161,14 @@ public class QLearnerAI extends AIModule{
 
             game.unMakeMove();
             Board sPrime = getStateActionValues(game);
-            maxQValue = Double.valueOf(sPrime.q_values[getMaxQValueAction(sPrime.legalActions, sPrime.q_values)]);
             game.unMakeMove();
-
 
             if(state_action_seed_check.get(curr_board.state) != null) {
                 String[] seedStrings = state_action_seed_check.get(curr_board.state);
                 Double seedOfChosenMove = Double.valueOf(seedStrings[chosenMoveCopy]);
 
                 if (seedOfChosenMove.equals(1.0)) {
-                    return;
+                    return; // already seeded state; don't update q-table
                 }
 
             }
@@ -182,7 +180,7 @@ public class QLearnerAI extends AIModule{
                     q = Double.valueOf(state_action_values.get(curr_board.state)[chosenMoveCopy]);
                 }
             }
-
+            maxQValue = Double.valueOf(sPrime.q_values[getMaxQValueAction(sPrime.legalActions, sPrime.q_values)]);
             reward = 0.0;
             q = ((1-alpha) * q) + (alpha * (reward + gamma * maxQValue));
             updateQTableHelper(curr_board, chosenMoveCopy, q);
@@ -324,16 +322,6 @@ public class QLearnerAI extends AIModule{
         int occupies = 0;
         int threatLevel = 0;
 
-/*        game.makeMove(1);
-        game.makeMove(2);
-        game.makeMove(2);
-        game.makeMove(1);
-
-        game.makeMove(3);
-        game.makeMove(1);
-        game.makeMove(3);
-        game.makeMove(0);*/
-
         for (int row = 0; row < game.getHeight(); row++) {
             occupies = game.getAt(col,row);
             if (occupies == game.getActivePlayer()) {
@@ -358,7 +346,81 @@ public class QLearnerAI extends AIModule{
     }
 
     public int diagonalThreats(GameStateModule game) {
-        return -1;
+        int enemyStreak = 0;
+        int diag = 0;
+        int occupies;
+
+        boolean upRightIsBlocked = false;
+        boolean bottomRightIsBlocked = false;
+
+        int blockingCol = -1; // if this function returns this value, no diagonalThreats detected
+
+        // up-right from bottom-left
+        for (int i = 0; i < game.getWidth(); ++i) {
+            occupies = game.getAt(i,i);
+            if (occupies == game.getActivePlayer()) {
+                enemyStreak = 0;
+                upRightIsBlocked = true;
+            }
+            else if (occupies != 0) {
+                enemyStreak++;
+            }
+        }
+        if (enemyStreak >= 1 && !upRightIsBlocked) {
+            // check if it's a threat we can directly block
+            if (game.getAt(0,0) == 0) {
+                blockingCol = 0;
+            }
+            else if (game.getAt(1,1) == 0 && game.getAt(1,0) != 0) {
+                blockingCol = 1;
+            }
+            else if (game.getAt(2,2) == 0 && game.getAt(2,1) != 0) {
+                blockingCol = 2;
+            }
+            else if (game.getAt(3,3) == 0 && game.getAt(3,2) != 0) {
+                blockingCol = 3;
+            }
+            else {
+                blockingCol = 3;
+            }
+        }
+
+        // bottom-right from top-left
+        int count = 0;
+        int col = 0;
+        int row = game.getHeight() - 1;
+        while (count != game.getWidth()) {
+            occupies = game.getAt(col,row);
+            if (occupies == game.getActivePlayer()) {
+                enemyStreak = 0;
+                bottomRightIsBlocked = true;
+            }
+            else if (occupies != 0) {
+                enemyStreak++;
+            }
+            ++count;
+            ++col;
+            --row;
+        }
+        if (enemyStreak >= 1 && !bottomRightIsBlocked) {
+            // check if it's a threat we can directly block
+            if (game.getAt(3,0) == 0) {
+                blockingCol = 3;
+            }
+            else if (game.getAt(2,1) == 0 && game.getAt(2,0) != 0) {
+                blockingCol = 2;
+            }
+            else if (game.getAt(1,2) == 0 && game.getAt(1,1) != 0) {
+                blockingCol = 1;
+            }
+            else if (game.getAt(0,3) == 0 && game.getAt(0,2) != 0) {
+                blockingCol = 0;
+            }
+            else {
+                blockingCol = 0;
+            }
+        }
+        return blockingCol;
     }
 
 }
