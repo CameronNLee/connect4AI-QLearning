@@ -8,6 +8,7 @@ public class QLearnerAI extends AIModule{
     private static double gamma = 0.99;
     public static HashMap<String, int[]> state_action_count = new HashMap<>();
     public static HashMap<String, String[]> state_action_values = new HashMap<>();
+    public static HashMap<String, String[]> state_action_seeded = new HashMap<>();
     int is_training;
 
     public QLearnerAI(int is_training){
