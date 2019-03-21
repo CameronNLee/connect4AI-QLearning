@@ -1,3 +1,4 @@
+import javax.management.RuntimeErrorException;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.io.*;
@@ -133,6 +134,7 @@ public class QLearnerAI extends AIModule{
         Boolean playerEndedGame = false;
         Boolean opponentEndedGame = false;
         Boolean seeded = false;
+        double seed = -10;
         Board opponentBoard = curr_board;
 
         game.makeMove(chosenMoveCopy);
@@ -172,7 +174,7 @@ public class QLearnerAI extends AIModule{
                     return;
                 }
             } else { // attempt to generate seeds for current state
-                seedValues(game, curr_board.state);
+                seedValues(game, curr_board.state, curr_board.legalActions);
                 // only returns seeds non-null if threat detected
                 if (state_action_seed_check.get(curr_board.state) != null) {
                     // set q to be the seeded value
@@ -182,6 +184,9 @@ public class QLearnerAI extends AIModule{
             }
 
             if (seeded) {
+                if (seed == -10) {
+                    throw new RuntimeException("help");
+                }
                 updateQTableHelper(curr_board, chosenMoveCopy, seed);
             } else {
                 reward = 0.0;
@@ -243,14 +248,14 @@ public class QLearnerAI extends AIModule{
     }
 
     // returns a list of seeded values
-    public void seedValues(GameStateModule game, String state) {
+    public void seedValues(GameStateModule game, String state, ArrayList<Integer> legalActions) {
         int THREAT_LEVEL_MIDNIGHT = 6;
         String[] seededValues = new String[game.getWidth()];
         boolean threatDetected = false;
         int colThreat = 0;
         int horzThreat = 0;
         int threatLevel = 0;
-        for (int col = 0; col < game.getWidth(); ++col) {
+        for (int col : legalActions) {
             colThreat = determineVerticalThreat(game, col);
             horzThreat = determineHorizontalThreat(game, col);
             threatLevel = colThreat + horzThreat;
@@ -315,8 +320,11 @@ public class QLearnerAI extends AIModule{
         int occupies = 0;
         int threatLevel = 0;
         int moveRow = game.getHeightAt(move);
-        System.out.println(move);
+/*        System.out.println(move);
         System.out.println("Move position: " +  moveRow);
+        if (moveRow == 4) {
+            System.out.println("debug");
+        }*/
 
         // rightward loop
         if (move + 1 < game.getWidth()) {
