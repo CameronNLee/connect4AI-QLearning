@@ -240,72 +240,32 @@ public class QLearnerAI extends AIModule{
         return maxIndex;
     }
 
-    /*
-    private int determineStreaks(GameStateModule game, Board currBoard) {
-        int streakBalance = 0;
-        streakBalance += determineHorizontalStreaks(game, currBoard, 3);
-        //streakBalance += determineVerticalStreaks(leaf, 3);
-        //streakBalance += determineDiagonalStreaks(leaf, 3);
-        return streakBalance;
-    }
-
-    private int determineHorizontalStreaks(GameStateModule game, Board currBoard, int totalStreak) {
-        int playerStreak = 0;
-        int enemyStreak = 0;
-        int totalPlayerStreaks = 0;
-        int totalEnemyStreaks = 0;
-        int occupies = 0;
-
-        for (int row = 0; row < game.getHeight(); row++) {
-            for (int col = 0; col < game.getWidth(); col++) {
-                occupies = leaf.getState().getAt(col,row);
-                if (occupies == player) {
-                    playerStreak += 1;
-                    enemyStreak = 0;
-                }
-                else if (occupies == enemy) {
-                    enemyStreak += 1;
-                    playerStreak = 0;
-                }
-                else {
-                    if (playerStreak > 0) {
-                        playerStreak += 1;
-                    }
-                    else if (enemyStreak > 0) {
-                        enemyStreak += 1;
-                    }
-                }
-                if (playerStreak >= totalStreak) {
-                    totalPlayerStreaks += 1;
-                    playerStreak = 0;
-                }
-                if (enemyStreak >= totalStreak) {
-                    totalEnemyStreaks += 1;
-                    enemyStreak = 0;
-                }
-            }
-            playerStreak = 0;
-            enemyStreak = 0;
-        }
-        return (totalPlayerStreaks - totalEnemyStreaks);
-    }
-    */
-
     // returns a list of seeded values
     public void seedValues(GameStateModule game, String state) {
+        int THREAT_LEVEL_MIDNIGHT = 6;
         String[] seededValues = new String[game.getWidth()];
         boolean threatDetected = false;
+        int colThreat = 0;
+        int horzThreat = 0;
+        int threatLevel = 0;
         for (int col = 0; col < game.getWidth(); ++col) {
-            int colThreat = determineVerticalThreat(game, col);
-            if (colThreat == 2) {
+            colThreat = determineVerticalThreat(game, col);
+            horzThreat = determineHorizontalThreat(game, col);
+            threatLevel = colThreat + horzThreat;
+            switch (threatLevel) {
+            case 4:
+                seededValues[col] = Double.toString(0.93);
+                threatDetected = true;
+            case 3:
+                seededValues[col] = Double.toString(0.92);
+                threatDetected = true;
+            case 2:
                 seededValues[col] = Double.toString(0.9);
                 threatDetected = true;
-            }
-            else if (colThreat == 1) {
+            case 1:
                 seededValues[col] = Double.toString(0.8);
                 threatDetected = true;
-            }
-            else {
+            default:
                 seededValues[col] = Double.toString(0.0);
             }
         } // end of for
@@ -323,16 +283,6 @@ public class QLearnerAI extends AIModule{
         int enemyStreak = 0;
         int occupies = 0;
         int threatLevel = 0;
-
-/*        game.makeMove(1);
-        game.makeMove(2);
-        game.makeMove(2);
-        game.makeMove(1);
-
-        game.makeMove(3);
-        game.makeMove(1);
-        game.makeMove(3);
-        game.makeMove(0);*/
 
         for (int row = 0; row < game.getHeight(); row++) {
             occupies = game.getAt(col,row);
@@ -353,6 +303,53 @@ public class QLearnerAI extends AIModule{
             else if (enemyStreak == 3) {
                 threatLevel = 2;
             }
+        }
+
+        return threatLevel;
+    }
+
+    public int determineHorizontalThreat(GameStateModule game, int move) {
+        int playerStreak = 0;
+        int enemyStreak = 0;
+        int occupies = 0;
+        int threatLevel = 0;
+        int move_position = game.getHeightAt(move);
+
+        // rightward loop
+        if (move + 1 < game.getWidth()) {
+            for (int position = move_position + game.getWidth(); position < game.getWidth() * game.getHeight(); position += game.getWidth()) {
+                occupies = game.getAt(position, move_position);
+                if (occupies == game.getActivePlayer()) {
+                    playerStreak += 1;
+                    enemyStreak = 0;
+                }
+                else if (occupies != 0) {
+                    enemyStreak += 1;
+                    playerStreak = 0;
+                }
+            }
+        }
+
+        // leftward loop
+        if (move - 1 > 0) {
+            for (int position = move_position; position < game.getWidth() * game.getHeight(); position -= game.getWidth()) {
+                occupies = game.getAt(position, move_position);
+                if (occupies == game.getActivePlayer()) {
+                    playerStreak += 1;
+                    enemyStreak = 0;
+                }
+                else if (occupies != 0) {
+                    enemyStreak += 1;
+                    playerStreak = 0;
+                }
+            }
+        }
+
+        if (enemyStreak == 2) {
+            threatLevel = 1;
+        }
+        else if (enemyStreak == 3) {
+            threatLevel = 2;
         }
 
         return threatLevel;
