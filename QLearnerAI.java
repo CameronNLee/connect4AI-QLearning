@@ -354,7 +354,11 @@ public class QLearnerAI extends AIModule{
                 threatLevel = 2;
             }
         }
-
         return threatLevel;
     }
+
+    public int diagonalThreats(GameStateModule game) {
+        return -1;
+    }
+
 }
